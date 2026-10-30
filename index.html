@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Carnet Poids du Corps</title>
+<meta name="theme-color" content="#0d0f14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Carnet">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<style>
+/* Layout : appli mobile sombre, une colonne ; écran de séance plein écran avec un seul gros chiffre et deux gros boutons */
+:root{
+  --bg:#0d0f14; --card:#161a22; --sunk:#1f2430; --ink:#eef0f5; --muted:#99a1b3; --line:#2a3040;
+  --go:#3ddc97; --go-ink:#06140e; --rest:#ffb547; --bad:#ff6b5b; --leg:#ff8a3d; --band:#ffd166;
+  --sans:system-ui,-apple-system,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  --cond:"SF Pro Display","Arial Narrow","Roboto Condensed",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--ink)}
+body{font:400 17px/1.45 var(--sans);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 110px;display:flex;flex-direction:column;gap:14px}
+h1,h2,h3{margin:0;line-height:1.05;text-wrap:balance;font-family:var(--cond)}
+h1{font-size:2rem;font-weight:800;letter-spacing:-.01em}
+h2{font-size:1.45rem;font-weight:750}
+h3{font-size:1.15rem;font-weight:700}
+p{margin:0}
+.lbl{font:650 .74rem var(--sans);letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)} .small{font-size:.9rem} .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.card{background:var(--card);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.btn{font:700 1.05rem var(--sans);border:0;border-radius:14px;padding:15px 18px;min-height:52px;cursor:pointer;background:var(--go);color:var(--go-ink)}
+.btn.ghost{background:var(--sunk);color:var(--ink)}
+.btn.warn{background:var(--rest);color:#1d1100}
+.btn.sm{min-height:40px;padding:8px 14px;font-size:.95rem;border-radius:11px}
+.btn.wide{width:100%}
+.btn:disabled{opacity:.45}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--rest);outline-offset:2px}
+a{color:var(--go)}
+input,select,textarea{font:400 1rem var(--sans);color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:11px;padding:11px;width:100%;min-width:0}
+textarea{min-height:110px;font-family:var(--mono);font-size:.8rem}
+label{font-weight:600;font-size:.88rem;color:var(--muted)}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--sunk);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font:700 1.45rem var(--mono);font-variant-numeric:tabular-nums}
+.pill{display:inline-flex;align-items:center;gap:6px;font:650 .78rem var(--sans);padding:4px 10px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.pill.go{background:color-mix(in srgb,var(--go) 18%,transparent);color:var(--go)}
+.pill.rest{background:color-mix(in srgb,var(--rest) 18%,transparent);color:var(--rest)}
+.items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;background:var(--sunk);border-radius:12px;padding:10px}
+.item svg{width:62px;height:52px}
+.code{font:800 1.05rem var(--mono);color:var(--go)}
+.tgt{font:700 1.05rem var(--mono);text-align:right;white-space:nowrap}
+/* barre d'onglets */
+nav.tab{position:fixed;left:0;right:0;bottom:0;z-index:15;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(5,1fr);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+nav.tab button{background:none;border:0;color:var(--muted);font:600 .72rem var(--sans);display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;cursor:pointer;min-height:48px}
+nav.tab button svg{width:22px;height:22px}
+nav.tab button[aria-current="page"]{color:var(--go)}
+/* séance */
+#run{position:fixed;inset:0;z-index:30;background:var(--bg);overflow:auto;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+#run .wrap{padding-bottom:28px;min-height:100%}
+.trail{display:flex;gap:3px}
+.trail i{flex:1;height:5px;border-radius:3px;background:var(--line)}
+.trail i.d{background:var(--go)} .trail i.n{background:var(--rest)}
+.hero{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.huge{font:800 6.2rem/0.95 var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.pad{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pad button{font:800 2.4rem var(--mono);min-height:84px;border-radius:18px;border:0;background:var(--sunk);color:var(--ink);cursor:pointer}
+.stage{width:100%;max-width:340px;aspect-ratio:6/5;margin:0 auto;background:var(--card);border-radius:16px}
+.stage svg{width:100%;height:100%;display:block}
+.rest{background:var(--bg)}
+.ring{position:relative;width:min(78vw,300px);aspect-ratio:1;margin:0 auto}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.ring .huge{font-size:4.6rem;color:var(--rest)}
+.flash{animation:fl .6s ease 2}
+@keyframes fl{50%{background:color-mix(in srgb,var(--go) 35%,var(--bg))}}
+.setdots{display:flex;gap:6px;justify-content:center}
+.setdots span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 .8rem var(--mono);background:var(--sunk);color:var(--muted)}
+.setdots span.ok{background:color-mix(in srgb,var(--go) 25%,var(--sunk));color:var(--go)}
+.setdots span.ko{background:color-mix(in srgb,var(--bad) 22%,var(--sunk));color:var(--bad)}
+.setdots span.now{outline:2px solid var(--rest);color:var(--ink)}
+.chart{width:100%;height:170px;display:block}
+.hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.hist li{display:flex;justify-content:space-between;gap:8px;background:var(--sunk);border-radius:11px;padding:10px 12px;font-size:.93rem}
+.ed{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:var(--sunk);border-radius:12px;padding:10px}
+.ed .w2{grid-column:span 2} .ed .w4{grid-column:1/-1}
+.ed input,.ed select{padding:9px;font-size:.95rem;background:var(--card)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:40;max-width:calc(100% - 32px)}
+details summary{cursor:pointer;color:var(--muted);font-weight:600}
+@media (max-width:380px){.huge{font-size:5rem}.g3{grid-template-columns:1fr 1fr}}
+@media (prefers-reduced-motion:reduce){.flash{animation:none}}
+</style>
+
+<main class="wrap" id="view"></main>
+<div id="run" hidden></div>
+<nav class="tab" aria-label="Navigation">
+  <button data-v="home" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>Accueil</button>
+  <button data-v="prog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Programme</button>
+  <button data-v="hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M4 19h16M8 15l4-5 3 3 4-6"/></svg>Progrès</button>
+  <button data-v="body"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2.5"/><path d="M6 9h12M12 9v6M12 15l-4 6M12 15l4 6"/></svg>Corps</button>
+  <button data-v="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Mes niveaux</button>
+</nav>
+
+<script>
+(function(){
+"use strict";
+/* =====================================================================
+   1. PROGRAMME INTÉGRÉ « CARNET » — conçu pour cette appli
+   Familles : P poussée · D dips · E épaules · T tirage · J jambes (genou ménagé)
+              H hanches/ischios · G gainage · M mollets
+   unit "reps" ou "sec" ; fig = figure animée
+   ===================================================================== */
+const EXO={
+  P1:{n:"Pompes au mur",u:"reps",fig:"wall",q:"wall push up",t:["Mains sur le mur, hauteur d'épaules.","Corps gainé des talons à la tête.","Poitrine vers le mur, repousse."]},
+  P2:{n:"Pompes inclinées sur table",u:"reps",fig:"incl",q:"incline push up",t:["Mains sur le bord d'une table stable.","Corps aligné, fessiers serrés.","Poitrine au bord, repousse."]},
+  P3:{n:"Pompes sur les genoux",u:"reps",fig:"knee",q:"knee push up",t:["Genoux sur un tapis, mains sous les épaules.","Ligne droite genoux-tête.","Coudes à 45°, poitrine près du sol."]},
+  P4:{n:"Pompes",u:"reps",fig:"push",q:"push up form",t:["Mains sous les épaules.","Pas de dos creux.","Frôle le sol, repousse."]},
+  P5:{n:"Pompes pieds surélevés",u:"reps",fig:"feet",q:"decline push up",t:["Pieds sur une chaise.","Corps aligné.","Descente contrôlée."]},
+  P6:{n:"Pompes diamant",u:"reps",fig:"push",q:"diamond push up",t:["Mains rapprochées sous la poitrine.","Coudes le long du corps.","Descends jusqu'aux mains."]},
+  P7:{n:"Pompes archer assistées",u:"reps",fig:"push",q:"archer push up",t:["Mains très écartées.","Descends vers un bras, l'autre reste tendu.","Compte par côté."]},
+  P8:{n:"Pompes lentes pieds surélevés (4 s)",u:"reps",fig:"feet",q:"slow tempo decline push up",t:["Pieds sur une chaise.","Descente en 4 secondes.","Remontée normale."]},
+  D1:{n:"Dips sur chaise, genoux pliés",u:"reps",fig:"dips",q:"chair dips bent knees",t:["Mains sur le bord d'une chaise calée.","Genoux pliés, pieds au sol.","Descends à 90° aux coudes, remonte."]},
+  D2:{n:"Dips sur chaise, jambes tendues",u:"reps",fig:"dips",q:"chair dips straight legs",t:["Jambes tendues, talons au sol.","Épaules basses.","Coudes à 90°, remonte."]},
+  E1:{n:"Pompes en V (pike)",u:"reps",fig:"pike",q:"pike push up",t:["Fesses hautes, corps en V inversé.","Descends la tête entre les mains.","Repousse vers le haut."]},
+  E2:{n:"Pike pieds surélevés",u:"reps",fig:"pike",q:"elevated pike push up",t:["Pieds sur une chaise.","Buste presque vertical.","Tête entre les mains, repousse."]},
+  T1:{n:"Tirage élastique assis",u:"reps",fig:"brow",q:"seated band row",t:["Élastique autour des pieds.","Tire les coudes en arrière.","Serre les omoplates 1 s."]},
+  T2:{n:"Tirage élastique, pause 2 s",u:"reps",fig:"brow",q:"band row pause",t:["Élastique plus court.","Tiens 2 s omoplates serrées.","Retour en 3 s."]},
+  T3:{n:"Rowing sous table, genoux pliés",u:"reps",fig:"trow",q:"inverted row table",t:["Sous une table lourde et stable.","Mains au bord, genoux pliés.","Poitrine vers la table."]},
+  T4:{n:"Rowing sous table, jambes tendues",u:"reps",fig:"trow",q:"inverted row straight legs",t:["Talons au sol, corps droit.","Tire jusqu'à la table.","Descente lente."]},
+  T5:{n:"Rowing sous table, pieds surélevés",u:"reps",fig:"trow",q:"feet elevated inverted row",t:["Talons sur une chaise.","Corps horizontal.","Tire la poitrine."]},
+  T6:{n:"Rowing un bras assisté",u:"reps",fig:"trow",q:"one arm inverted row",t:["Un bras tire, l'autre aide un peu.","Corps gainé, pas de rotation.","Compte par bras."]},
+  J1:{n:"Squat espagnol isométrique",u:"sec",fig:0,q:"Spanish squat patellar tendon",t:["Élastique derrière les genoux, fixé bas.","Tibias verticaux, poids sur les talons.","Tiens à un angle confortable."]},
+  J2:{n:"Chaise au mur",u:"sec",fig:4,q:"wall sit",t:["Dos au mur.","Genoux au-dessus des chevilles.","Angle confortable, pas forcément 90°."]},
+  J3:{n:"Montée de step basse",u:"reps",fig:6,q:"low step up",t:["Marche de 15-20 cm.","Pousse sur la jambe du haut.","Genou dans l'axe. Par jambe."]},
+  J4:{n:"Squat sur chaise",u:"reps",fig:"boxsq",q:"box squat chair",t:["Fesses en arrière jusqu'à effleurer la chaise.","Genoux dans l'axe des pieds.","Remonte sans t'asseoir."]},
+  J5:{n:"Fente arrière partielle",u:"reps",fig:"lunge",q:"reverse lunge",t:["Recule une jambe.","Mi-hauteur seulement.","Par jambe."]},
+  J6:{n:"Split squat",u:"reps",fig:"lunge",q:"split squat",t:["Position fendue fixe.","Descends à la verticale.","Par jambe."]},
+  J7:{n:"Montée de step haute",u:"reps",fig:6,q:"high step up",t:["Marche de 30-40 cm.","Pas d'impulsion du pied au sol.","Par jambe."]},
+  J8:{n:"Squat bulgare partiel",u:"reps",fig:"lunge",q:"bulgarian split squat",t:["Pied arrière sur une chaise.","Descends à mi-hauteur.","Par jambe."]},
+  H1:{n:"Pont fessier",u:"reps",fig:"bridge",q:"glute bridge",t:["Pieds à plat, genoux pliés.","Monte le bassin.","Serre les fessiers en haut."]},
+  H2:{n:"Pont fessier une jambe",u:"reps",fig:"bridge1",q:"single leg glute bridge",t:["Une jambe en l'air.","Pousse sur le talon.","Par jambe."]},
+  H3:{n:"Hip thrust sur canapé",u:"reps",fig:"thrust",q:"hip thrust couch",t:["Haut du dos sur le canapé.","Bassin à l'horizontale en haut.","Pause 1 s."]},
+  H4:{n:"Hip thrust une jambe",u:"reps",fig:"thrust1",q:"single leg hip thrust",t:["Une jambe levée.","Pas de rotation du bassin.","Par jambe."]},
+  H5:{n:"Good morning élastique",u:"reps",fig:"gm",q:"band good morning",t:["Élastique sous les pieds, sur les épaules.","Dos plat, genoux souples.","Penche et remonte."]},
+  H6:{n:"Leg curl glissé sur serviette",u:"reps",fig:"bridge",q:"sliding hamstring curl towel",t:["Pont fessier, talons sur une serviette (parquet).","Fais glisser les talons loin, puis ramène.","Garde le bassin haut."]},
+  G1:{n:"Planche sur les genoux",u:"sec",fig:"kplank",q:"knee plank",t:["Avant-bras et genoux.","Ventre serré.","Respire."]},
+  G2:{n:"Planche",u:"sec",fig:"plank",q:"forearm plank",t:["Avant-bras et pointes de pieds.","Corps aligné.","Bassin stable."]},
+  G3:{n:"Dead bug",u:"reps",fig:"deadbug",q:"dead bug",t:["Dos au sol, bras tendus, genoux à 90°.","Tends bras et jambe opposés.","Alterne. Par côté."]},
+  G4:{n:"Planche latérale",u:"sec",fig:"side",q:"side plank",t:["Coude sous l'épaule.","Bassin levé.","Chaque côté."]},
+  G5:{n:"Hollow hold",u:"sec",fig:"hollow",q:"hollow body hold",t:["Sur le dos, bas du dos plaqué.","Épaules et jambes décollées.","Tiens la forme de banane."]},
+  G6:{n:"Relevés de jambes au sol",u:"reps",fig:"legraise",q:"lying leg raises",t:["Sur le dos, mains sous les fesses.","Monte les jambes tendues.","Redescends sans toucher."]},
+  M1:{n:"Mollets debout",u:"reps",fig:"calf",q:"standing calf raise",t:["Debout, main au mur.","Monte sur la pointe.","Descente lente."]},
+  M2:{n:"Mollets une jambe sur marche",u:"reps",fig:"calf",q:"single leg calf raise step",t:["Avant-pied sur une marche.","Talon sous la marche puis monte.","Par jambe."]}
+};
+// it(code, séries, départ, pas, repos série, repos après, variante?) ; variante = [seuil, code, départ]
+const it=(code,sets,start,step,restSet,restAfter,sw,rhythm)=>({code,sets,start,step,restSet,restAfter,rhythm:rhythm||"normal",swap:sw?{at:sw[0],to:sw[1],start:sw[2]}:null});
+const LEVELS={
+ 1:{name:"Fondations",items:[it("P1",4,8,1,45,90,[15,"P2",6]),it("T1",4,10,1,45,90,[15,"T2",10]),it("J1",4,30,0,90,90),it("H1",4,10,1,45,90),it("G1",3,20,5,45,0,[40,"G2",20])],up:{code:"P2",reps:10}},
+ 2:{name:"Stabilité",items:[it("P2",4,8,1,45,90,[15,"P3",6]),it("T2",4,10,1,45,90,[15,"T3",6]),it("J1",5,45,0,90,90),it("H1",4,12,1,45,90,[20,"H3",10]),it("G2",3,20,5,45,0,[45,"G3",8])],up:{code:"P3",reps:8}},
+ 3:{name:"Premières pompes",items:[it("P3",4,8,1,45,90,[15,"P4",4]),it("T3",4,6,1,60,90,[12,"T4",6]),it("J2",3,20,5,60,90),it("H3",4,10,1,45,90,[15,"H2",8]),it("G3",3,8,1,45,0)],up:{code:"P4",reps:5}},
+ 4:{name:"Corps entier",items:[it("P4",5,5,1,60,120,[12,"P5",5]),it("T4",4,6,1,60,90,[12,"T5",5]),it("J3",4,8,1,60,90,[12,"J4",8]),it("H2",4,8,1,45,90,[12,"H4",8]),it("D1",3,8,1,45,90,[15,"D2",8]),it("G4",3,20,5,45,0,[40,"G5",15])],up:{code:"P4",reps:10}},
+ 5:{name:"Épaules",items:[it("P4",5,8,1,60,120,[14,"P5",6]),it("E1",4,5,1,60,120,[12,"E2",4]),it("T4",5,8,1,60,90,[12,"T5",6]),it("J4",4,8,1,60,90,[12,"J5",6]),it("H4",4,8,1,45,90),it("G5",3,15,5,45,0)],up:{code:"P5",reps:6}},
+ 6:{name:"Une jambe",items:[it("P5",5,6,1,60,120,[12,"P6",5]),it("D2",4,8,1,60,90),it("T5",4,6,1,60,90),it("J5",4,8,1,60,90,[12,"J6",8]),it("H5",4,12,1,45,90),it("G6",3,8,1,45,0)],up:{code:"P6",reps:6}},
+ 7:{name:"Densité",items:[it("P6",5,6,1,60,120),it("E2",4,6,1,60,120),it("T5",5,8,1,60,90,[12,"T6",4]),it("J6",4,8,1,60,90,[12,"J7",8]),it("H4",5,10,1,45,90),it("G5",3,30,5,45,0)],up:{code:"T5",reps:12}},
+ 8:{name:"Unilatéral",items:[it("P7",4,4,1,75,120),it("T6",4,5,1,75,90),it("D2",5,10,1,60,90),it("J7",4,8,1,60,90),it("H6",4,6,1,60,90),it("G6",4,10,1,45,0)],up:{code:"P7",reps:8}},
+ 9:{name:"Tempo",items:[it("P7",5,6,1,75,120),it("P8",3,6,1,60,120),it("T6",5,6,1,75,90),it("J8",4,6,1,60,90),it("H6",5,8,1,60,90),it("G5",4,40,5,45,0)],up:{code:"P7",reps:10}},
+ 10:{name:"Volume",items:[it("P8",5,8,1,60,120),it("E2",5,8,1,60,120),it("T6",5,8,1,75,90),it("T5",3,12,1,45,90),it("J8",5,8,1,60,90),it("H4",5,12,1,45,90),it("G6",4,12,1,45,0)],up:{code:"T6",reps:10}},
+ 11:{name:"Avancé",items:[it("P7",6,8,1,75,120),it("P8",4,10,1,60,120),it("T6",6,8,1,75,90),it("J8",5,10,1,60,90),it("H6",5,10,1,60,90),it("M2",4,12,1,45,90),it("G5",4,45,5,45,0)],up:{code:"P7",reps:12}},
+ 12:{name:"Entretien haut niveau",items:[it("P7",6,10,1,75,120),it("P8",5,10,1,60,120),it("D2",5,15,1,60,90),it("T6",6,10,1,75,90),it("T5",4,15,1,45,90),it("J8",6,10,1,60,90),it("H6",6,10,1,60,90),it("G6",4,15,1,45,0)],up:null}
+};
+
+/* =====================================================================
+   2. FIGURES ANIMÉES (dessinées pour l'appli)
+   ===================================================================== */
+const ST={h:[120,40],n:[120,56],e:[123,82],w:[126,104],p:[120,105],kr:[123,142],ar:[122,178],tr:[137,180],kl:[117,142],al:[117,178],tl:[132,180]};
+const P=o=>Object.assign({},ST,o),O=(a,b)=>Object.assign({},a,b);
+const LY={h:[40,160],n:[56,166],e:[80,172],w:[100,175],p:[110,170],kr:[150,170],ar:[190,172],tr:[193,160],kl:[150,171],al:[190,173],tl:[193,161]};
+const PU_A={h:[182,130],n:[165,138],e:[168,159],w:[166,180],p:[105,156],kr:[72,166],ar:[40,176],tr:[44,182],kl:[72,167],al:[40,177],tl:[44,182]};
+const PU_B={h:[182,156],n:[165,160],e:[146,170],w:[166,180],p:[105,166],kr:[72,171],ar:[40,177],tr:[44,182],kl:[72,172],al:[40,178],tl:[44,182]};
+const KN={kr:[90,178],ar:[62,164],tr:[56,160],kl:[90,178],al:[62,165],tl:[56,161]};
+const PL={h:[178,138],n:[162,144],e:[162,178],w:[186,180],p:[104,160],kr:[72,168],ar:[40,176],tr:[44,182],kl:[72,169],al:[40,177],tl:[44,182]};
+const BR={h:[40,168],n:[56,173],e:[78,177],w:[100,178],p:[100,174],kr:[132,140],ar:[150,178],tr:[164,180],kl:[130,141],al:[146,178],tl:[160,180]};
+const HT={h:[44,116],n:[60,128],e:[60,150],w:[66,166],p:[98,168],kr:[138,140],ar:[146,178],tr:[160,180],kl:[136,141],al:[142,178],tl:[156,180]};
+const RW={h:[90,112],n:[90,128],e:[116,142],w:[142,150],p:[92,176],kr:[130,174],ar:[168,176],tr:[172,164],kl:[130,175],al:[168,177],tl:[172,165]};
+const TR={h:[184,148],n:[168,152],e:[172,124],w:[174,98],p:[108,166],kr:[74,172],ar:[40,178],tr:[38,166],kl:[74,173],al:[40,179],tl:[38,167]};
+const DB={h:[40,166],n:[56,170],e:[60,146],w:[62,122],p:[110,172],kr:[112,136],ar:[148,136],tr:[152,124],kl:[108,137],al:[144,137],tl:[148,125]};
+const DIP={h:[96,46],n:[96,62],e:[74,88],w:[70,112],p:[96,112],kr:[140,116],ar:[176,178],tr:[190,180],kl:[138,117],al:[172,178],tl:[186,180]};
+const PK={h:[150,150],n:[140,138],e:[150,160],w:[158,180],p:[110,92],kr:[90,136],ar:[72,178],tr:[86,181],kl:[90,137],al:[72,178],tl:[86,181]};
+const HO={h:[52,150],n:[64,160],e:[40,150],w:[18,144],p:[112,172],kr:[150,164],ar:[188,154],tr:[194,144],kl:[150,165],al:[188,155],tl:[194,145]};
+const post=x=>`<rect x="${x-4}" y="120" width="8" height="60" rx="2" fill="var(--muted)"/>`;
+const band=(a,b)=>`<path d="M${a[0]} ${a[1]} L${b[0]} ${b[1]}" stroke="var(--band)" stroke-width="4" stroke-linecap="round" fill="none"/>`;
+const wallR=x=>`<rect x="${x-10}" y="20" width="10" height="160" fill="var(--line)"/>`;
+const table=(x,y)=>`<rect x="${x}" y="${y}" width="${236-x}" height="7" rx="2" fill="var(--muted)"/><rect x="${x+8}" y="${y+7}" width="5" height="${175-y}" fill="var(--line)"/>`;
+const box=(x1,x2,top)=>`<rect x="${x1}" y="${top}" width="${x2-x1}" height="${182-top}" rx="4" fill="var(--line)"/>`;
+const chair=()=>`<rect x="54" y="136" width="44" height="7" rx="2" fill="var(--muted)"/><rect x="56" y="143" width="5" height="39" fill="var(--line)"/><rect x="91" y="143" width="5" height="39" fill="var(--line)"/><rect x="54" y="90" width="5" height="46" fill="var(--line)"/>`;
+const no=()=>"";
+const FIG={
+  0:{a:P({}),b:P({h:[98,68],n:[98,84],e:[110,104],w:[128,112],p:[90,134],kr:[121,142],kl:[117,142],al:[116,178],tl:[131,180],ar:[120,178],tr:[135,180]}),pr:s=>post(214)+band(s.kr,[214,146])},
+  4:{a:P({h:[74,58],n:[74,74],e:[82,98],w:[96,112],p:[76,114],kr:[116,132],ar:[118,178],tr:[133,180],kl:[112,133],al:[113,178],tl:[128,180]}),b:P({h:[74,66],n:[74,82],e:[84,104],w:[100,120],p:[76,126],kr:[118,126],ar:[118,178],tr:[133,180],kl:[114,127],al:[113,178],tl:[128,180]}),pr:()=>wallR(70)},
+  6:{a:P({h:[110,40],n:[110,56],p:[110,105],e:[114,82],w:[118,104],kr:[140,124],ar:[150,153],tr:[165,154],kl:[110,142],al:[108,178],tl:[123,180]}),b:P({h:[150,16],n:[150,32],p:[150,82],e:[153,58],w:[156,80],kr:[153,118],ar:[150,153],tr:[165,154],kl:[148,118],al:[140,148],tl:[152,152]}),pr:()=>box(128,208,154)},
+  wall:{a:{h:[170,58],n:[160,72],e:[178,76],w:[198,80],p:[138,118],kr:[124,148],ar:[110,178],tr:[124,181],kl:[121,148],al:[106,178],tl:[120,181]},b:{h:[184,64],n:[174,78],e:[182,96],w:[198,82],p:[146,122],kr:[128,150],ar:[110,178],tr:[124,181],kl:[125,150],al:[106,178],tl:[120,181]},pr:()=>wallR(210)},
+  incl:{a:{h:[166,88],n:[152,96],e:[166,108],w:[180,120],p:[108,138],kr:[84,158],ar:[60,178],tr:[66,182],kl:[84,159],al:[60,178],tl:[66,182]},b:{h:[178,104],n:[164,110],e:[158,124],w:[180,120],p:[112,146],kr:[86,162],ar:[60,178],tr:[66,182],kl:[86,163],al:[60,178],tl:[66,182]},pr:()=>table(176,120)},
+  knee:{a:O(PU_A,O(KN,{p:[118,158]})),b:O(PU_B,O(KN,{p:[120,168]})),pr:no},
+  push:{a:PU_A,b:PU_B,pr:no},
+  feet:{a:O(PU_A,{h:[182,128],n:[165,136],p:[105,141],kr:[72,143],ar:[40,146],tr:[34,142],kl:[72,144],al:[40,147],tl:[34,143]}),b:O(PU_B,{p:[105,152],kr:[72,149],ar:[40,146],tr:[34,142],kl:[72,150],al:[40,147],tl:[34,143]}),pr:()=>box(14,56,148)},
+  dips:{a:DIP,b:O(DIP,{h:[96,70],n:[96,86],e:[68,92],p:[96,136],kr:[140,132],kl:[138,133]}),pr:()=>box(46,82,112)},
+  pike:{a:PK,b:O(PK,{h:[156,172],n:[146,160],e:[136,170],p:[112,98]}),pr:no},
+  brow:{a:RW,b:O(RW,{h:[86,112],n:[88,128],e:[66,142],w:[92,146]}),pr:s=>band(s.w,s.tr)},
+  trow:{a:TR,b:O(TR,{h:[184,112],n:[166,116],e:[146,106],p:[106,148],kr:[72,164],kl:[72,165]}),pr:()=>table(150,92)},
+  bridge:{a:BR,b:O(BR,{p:[102,144]}),pr:no},
+  bridge1:{a:O(BR,{kl:[138,160],al:[176,148],tl:[180,136]}),b:O(BR,{p:[102,144],kl:[138,134],al:[174,124],tl:[176,112]}),pr:no},
+  thrust:{a:HT,b:O(HT,{p:[100,130],kr:[138,130],kl:[136,131]}),pr:()=>box(8,62,130)},
+  thrust1:{a:O(HT,{kl:[130,150],al:[164,128],tl:[168,116]}),b:O(HT,{p:[100,130],kr:[138,130],kl:[136,118],al:[172,108],tl:[176,96]}),pr:()=>box(8,62,130)},
+  gm:{a:P({e:[134,70],w:[128,58]}),b:P({h:[178,88],n:[162,92],e:[158,108],w:[168,96],p:[112,108],kr:[124,142],kl:[120,142]}),pr:s=>band(s.w,[s.ar[0],s.ar[1]+2])},
+  kplank:{a:O(PL,O(KN,{p:[118,162]})),b:O(PL,O(KN,{p:[118,159]})),pr:no},
+  plank:{a:PL,b:O(PL,{p:[104,156]}),pr:no},
+  side:{a:O(PL,{w:[176,180]}),b:O(PL,{p:[104,154],w:[176,180]}),pr:no},
+  deadbug:{a:DB,b:O(DB,{e:[36,152],w:[16,160],kr:[146,162],ar:[184,166],tr:[188,154]}),pr:no},
+  hollow:{a:HO,b:O(HO,{h:[54,146],n:[66,156],ar:[190,150],kr:[150,162]}),pr:no},
+  legraise:{a:O(LY,{e:[86,176],w:[106,178]}),b:O(LY,{e:[86,176],w:[106,178],kr:[124,140],ar:[134,104],tr:[146,100],kl:[124,141],al:[134,105],tl:[146,101]}),pr:no},
+  calf:{a:P({e:[136,72],w:[150,64]}),b:P({h:[120,30],n:[120,46],e:[136,62],w:[150,54],p:[120,95],kr:[123,132],kl:[117,132],ar:[124,168],al:[119,168],tr:[137,180],tl:[132,180]}),pr:()=>wallR(166)},
+  boxsq:{a:P({e:[138,80],w:[158,82]}),b:{h:[110,74],n:[106,90],e:[130,98],w:[152,102],p:[88,136],kr:[124,140],ar:[122,178],tr:[137,180],kl:[120,141],al:[117,178],tl:[132,180]},pr:chair},
+  lunge:{a:P({}),b:{h:[112,62],n:[112,78],e:[116,104],w:[120,126],p:[110,124],kr:[140,148],ar:[134,178],tr:[149,180],kl:[96,160],al:[66,174],tl:[60,182]},pr:no},
+  none:{a:P({}),b:P({}),pr:no}
+};
+function figSVG(s,f){
+  const seg=(a,b,c,w)=>`<path d="M${s[a][0]} ${s[a][1]} L${s[b][0]} ${s[b][1]}${c?` L${s[c][0]} ${s[c][1]}`:""}" stroke="${w}" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+  const ft=(a,b,w)=>`<path d="M${s[a][0]} ${s[a][1]} L${s[b][0]} ${s[b][1]}" stroke="${w}" stroke-width="7" stroke-linecap="round" fill="none"/>`;
+  const dim="color-mix(in srgb,var(--ink) 40%,var(--card))";
+  return `<line x1="6" y1="182" x2="234" y2="182" stroke="var(--line)" stroke-width="3"/>`+f.pr(s)+seg("p","kl","al",dim)+ft("al","tl",dim)+seg("n","p",null,"var(--ink)")+seg("p","kr","ar","var(--leg)")+ft("ar","tr","var(--leg)")+seg("n","e","w","var(--ink)")+`<circle cx="${s.h[0]}" cy="${s.h[1]}" r="12" fill="var(--ink)"/>`;
+}
+const anims=new Set();
+const lerp=(a,b,t)=>{const o={};for(const k in a)o[k]=[a[k][0]+(b[k][0]-a[k][0])*t,a[k][1]+(b[k][1]-a[k][1])*t];return o};
+function animate(svg,key,period){const f=FIG[key]||FIG.none;if(matchMedia("(prefers-reduced-motion: reduce)").matches){svg.innerHTML=figSVG(f.b,f);return}anims.add({svg,f,t0:performance.now(),period:period||3200})}
+(function tick(now){anims.forEach(a=>{if(!a.svg.isConnected){anims.delete(a);return}const ph=((now-a.t0)%a.period)/a.period;let t=ph<.3?ph/.3:ph<.65?1:ph<.95?1-(ph-.65)/.3:0;t=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;a.svg.innerHTML=figSVG(lerp(a.f.a,a.f.b,t),a.f)});requestAnimationFrame(tick)})(performance.now());
+const svgEl=()=>`<svg viewBox="0 0 240 200" role="img" aria-label="Démonstration animée"></svg>`;
+
+/* =====================================================================
+   3. ÉTAT + STOCKAGE (IndexedDB, séance en cours dans localStorage)
+   ===================================================================== */
+const VERSION=1;
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const fresh=()=>({version:VERSION,settings:{program:"carnet",level:1,sound:true,autoAdvance:true},bodyLog:[],custom:{exercises:{},levels:{}},progress:{},sessions:[]});
+let S=fresh();
+const Store={db:null,kind:"mémoire",
+  async open(){try{this.db=await new Promise((res,rej)=>{const r=indexedDB.open("carnet-pdc",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});this.kind="appareil"}catch(e){this.db=null}},
+  async load(){if(!this.db){try{const v=localStorage.getItem("carnet-state");return v?JSON.parse(v):null}catch(e){return null}}
+    return new Promise(res=>{const r=this.db.transaction("kv").objectStore("kv").get("state");r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)})},
+  async save(){const data=JSON.parse(JSON.stringify(S));if(!this.db){try{localStorage.setItem("carnet-state",JSON.stringify(data))}catch(e){}return}
+    return new Promise(res=>{const tx=this.db.transaction("kv","readwrite");tx.objectStore("kv").put(data,"state");tx.oncomplete=res;tx.onerror=res})}
+};
+let saveT=null;const save=()=>{clearTimeout(saveT);saveT=setTimeout(()=>Store.save(),250)};
+const Active={get(){try{const v=localStorage.getItem("carnet-active");return v?JSON.parse(v):null}catch(e){return null}},set(v){try{v?localStorage.setItem("carnet-active",JSON.stringify(v)):localStorage.removeItem("carnet-active")}catch(e){}}};
+
+/* accès programme */
+const progName=p=>p==="carnet"?"Programme Carnet":"Mes niveaux";
+function levelDef(prog,num){if(prog==="carnet")return LEVELS[num]?{num,...LEVELS[num]}:null;const l=S.custom.levels[num];return l?{num,...l}:null}
+function levelNums(prog){return prog==="carnet"?Object.keys(LEVELS).map(Number):Object.keys(S.custom.levels).map(Number).sort((a,b)=>a-b)}
+function exo(prog,code){if(prog==="carnet")return EXO[code]?{code,...EXO[code]}:{code,n:code,u:"reps",fig:"none",t:[]};const e=S.custom.exercises[code];return e?{code,n:e.n,u:e.u||"reps",fig:"none",t:e.t?[e.t]:[],q:e.n}:{code,n:code,u:"reps",fig:"none",t:[]}}
+const pKey=(prog,num,i)=>`${prog}:${num}:${i}`;
+function prog(prog,num,i,item){const k=pKey(prog,num,i);if(!S.progress[k])S.progress[k]={code:item.code,target:item.start};return S.progress[k]}
+const unitTxt=(u,v)=>u==="sec"?`${v} s`:`${v}`;
+const fmt=t=>{t=Math.max(0,Math.ceil(t));return Math.floor(t/60)+":"+String(t%60).padStart(2,"0")};
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* =====================================================================
+   4. SON + ÉCRAN ALLUMÉ
+   ===================================================================== */
+const Sound={ctx:null,unlock(){try{this.ctx=this.ctx||new (window.AudioContext||window.webkitAudioContext)();if(this.ctx.state==="suspended")this.ctx.resume()}catch(e){}},
+  beep(f=880,d=.12,w=0){if(!S.settings.sound||!this.ctx)return;try{const o=this.ctx.createOscillator(),g=this.ctx.createGain(),t=this.ctx.currentTime+w;o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.25,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(this.ctx.destination);o.start(t);o.stop(t+d+.02)}catch(e){}}};
+const Wake={l:null,async on(){try{this.l=await navigator.wakeLock.request("screen")}catch(e){}},off(){try{this.l&&this.l.release()}catch(e){}this.l=null}};
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&!document.getElementById("run").hidden)Wake.on()});
+
+/* =====================================================================
+   5. MOTEUR DE REPOS — fin calculée en heure absolue (résiste à la veille)
+   ===================================================================== */
+class RestTimer{
+  constructor(onTick,onEnd){this.onTick=onTick;this.onEnd=onEnd;this.iv=null;this.endAt=0;this.total=0;this.paused=null;this.beeped=null;this._v=()=>this.loop();document.addEventListener("visibilitychange",this._v)}
+  start(sec,endAt){this.stop();this.total=sec;this.endAt=endAt||Date.now()+sec*1000;this.paused=null;this.beeped=null;this.iv=setInterval(()=>this.loop(),200);this.loop()}
+  left(){return this.paused!=null?this.paused:Math.max(0,(this.endAt-Date.now())/1000)}
+  pause(){if(!this.iv)return;this.paused=this.left();clearInterval(this.iv);this.iv=null;this.onTick(this.paused,this.total)}
+  resume(){if(this.paused==null)return;this.endAt=Date.now()+this.paused*1000;this.paused=null;this.iv=setInterval(()=>this.loop(),200);this.loop()}
+  add(s){if(this.paused!=null)this.paused+=s;else this.endAt+=s*1000;this.total+=s;this.loop()}
+  skip(){const taken=this.total-this.left();this.stop();this.onEnd(taken,true)}
+  stop(){clearInterval(this.iv);this.iv=null;this.paused=null}
+  destroy(){this.stop();document.removeEventListener("visibilitychange",this._v)}
+  loop(){if(this.paused!=null||!this.iv)return;const l=this.left();this.onTick(l,this.total);const s=Math.ceil(l);
+    if(s<=3&&s>=1&&this.beeped!==s){this.beeped=s;Sound.beep(660,.09)}
+    if(l<=0){this.stop();Sound.beep(990,.15);Sound.beep(1320,.2,.2);this.onEnd(this.total,false)}}
+}
+
+/* =====================================================================
+   6. MACHINE DE SÉANCE
+   ===================================================================== */
+function buildSteps(p,lv){
+  const steps=[];
+  lv.items.forEach((item,i)=>{
+    const pr=prog(p,lv.num,i,item);const e=exo(p,pr.code);
+    for(let s=1;s<=item.sets;s++){
+      steps.push({t:"work",i,code:pr.code,name:e.n,unit:e.u,target:pr.target,set:s,sets:item.sets,rhythm:item.rhythm});
+      if(s<item.sets&&item.restSet>0)steps.push({t:"rest",sec:item.restSet,why:"Repos entre séries"});
+    }
+    if(i<lv.items.length-1&&item.restAfter>0)steps.push({t:"rest",sec:item.restAfter,why:"Repos avant l'exercice suivant"});
+  });
+  return steps;
+}
+function applyProgress(p,lv,sets){
+  // +pas si toutes les séries à l'objectif ; propose la variante au seuil ; objectif repère pour le niveau
+  const out={up:[],swaps:[],level:false};
+  lv.items.forEach((item,i)=>{
+    const pr=prog(p,lv.num,i,item);const mine=sets.filter(x=>x.i===i);
+    if(mine.length<item.sets)return;
+    if(mine.every(x=>x.reps>=x.target)){
+      if(item.step>0){pr.target+=item.step;out.up.push({code:pr.code,target:pr.target})}
+      if(item.swap&&pr.code===item.code&&pr.target>=item.swap.at)out.swaps.push({i,from:pr.code,to:item.swap.to,start:item.swap.start});
+    }
+  });
+  if(lv.up){const hit=sets.filter(x=>x.code===lv.up.code);if(hit.length&&hit.every(x=>x.reps>=lv.up.reps))out.level=true}
+  return out;
+}
+let timer=null;
+function startSession(resume){
+  const p=S.settings.program,lv=levelDef(p,S.settings.level);if(!lv)return toast("Ce niveau est vide.");
+  Sound.unlock();Wake.on();
+  const steps=buildSteps(p,lv);
+  const A=resume||{id:uid(),prog:p,level:lv.num,startedAt:Date.now(),idx:0,sets:[],restEndsAt:null};
+  Active.set(A);
+  const el=document.getElementById("run");el.hidden=false;document.body.style.overflow="hidden";
+  const C=2*Math.PI*46;
+  timer&&timer.destroy();
+  timer=new RestTimer((left,total)=>{const h=el.querySelector("#rl");if(h)h.textContent=fmt(left);const a=el.querySelector("#arc");if(a)a.setAttribute("stroke-dashoffset",String(C*(1-(total?left/total:0))));const pb=el.querySelector("#pz");if(pb)pb.textContent=timer.paused!=null?"Reprendre":"Pause"},
+    (taken)=>{const last=A.sets[A.sets.length-1];if(last&&last.restPlanned==null){last.restPlanned=steps[A.idx].sec;last.restTaken=Math.round(taken)}A.idx++;A.restEndsAt=null;Active.set(A);
+      if(S.settings.autoAdvance||true){draw();const w=el.querySelector(".wrap");if(w){w.classList.add("flash")}}});
+  let reps=0,hold=null;
+  function close(){timer.destroy();timer=null;Wake.off();el.hidden=true;el.innerHTML="";document.body.style.overflow="";Active.set(null);render()}
+  function trail(){return `<div class="trail">${steps.map((s,k)=>s.t==="work"?`<i class="${k<A.idx?"d":k===A.idx?"n":""}"></i>`:"").join("")}</div>`}
+  function top(){return `<div class="row between"><span class="lbl">${esc(progName(p))} · niveau ${lv.num}</span><button class="btn ghost sm" id="q">Quitter</button></div>${trail()}`}
+  function dots(st){const done=A.sets.filter(x=>x.i===st.i);return `<div class="setdots">${Array.from({length:st.sets},(_,k)=>{const d=done[k];return `<span class="${d?(d.reps>=d.target?"ok":"ko"):k===st.set-1?"now":""}">${d?d.reps:k+1}</span>`}).join("")}</div>`}
+  function draw(){
+    clearInterval(hold);hold=null;
+    if(A.idx>=steps.length)return finish();
+    const st=steps[A.idx];
+    if(st.t==="work"){
+      reps=st.target;const e=exo(p,st.code);
+      const nxt=steps[A.idx+1];
+      el.innerHTML=`<div class="wrap">${top()}
+        <div class="row between"><div><span class="code">${esc(st.code)}</span> <span class="lbl">série ${st.set}/${st.sets}${st.rhythm!=="normal"?" · rythme "+esc(st.rhythm):""}</span></div><span class="pill">objectif ${unitTxt(st.unit,st.target)}</span></div>
+        <h2>${esc(e.n)}</h2>
+        ${p==="carnet"?`<div class="stage">${svgEl()}</div>`:""}
+        ${dots(st)}
+        ${st.unit==="reps"?`<div class="hero"><span class="lbl">Répétitions faites</span><div class="huge" id="rv" aria-live="polite">${reps}</div></div>
+          <div class="pad"><button id="mn" aria-label="Moins une">−</button><button id="pl" aria-label="Plus une">+</button></div>
+          <button class="btn wide" id="ok" style="min-height:64px;font-size:1.2rem">Valider la série</button>`
+        :`<div class="hero"><span class="lbl">Maintien</span><div class="huge" id="hv">0:00</div></div>
+          <button class="btn wide" id="hs" style="min-height:64px;font-size:1.2rem">Démarrer le maintien</button>`}
+        <p class="muted small" style="text-align:center">${nxt?nxt.t==="rest"?`Ensuite : repos ${fmt(nxt.sec)}`:`Ensuite : ${esc(nxt.code)}`:"Dernière série de la séance"}</p>
+        ${e.t&&e.t.length?`<details><summary>Technique</summary><ol class="small">${e.t.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>${e.q?`<a class="small" href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.q)}" target="_blank" rel="noopener">Démonstrations vidéo</a>`:""}</details>`:""}
+        <button class="btn ghost sm" id="sk" style="align-self:center">Passer cette série</button></div>`;
+      if(p==="carnet")animate(el.querySelector(".stage svg"),e.fig,st.unit==="sec"?5000:2600);
+      const g=id=>el.querySelector("#"+id);
+      const log=v=>{A.sets.push({i:st.i,code:st.code,set:st.set,target:st.target,reps:v,unit:st.unit,restPlanned:null,restTaken:null});A.idx++;
+        const n=steps[A.idx];if(n&&n.t==="rest")A.restEndsAt=Date.now()+n.sec*1000;Active.set(A);draw()};
+      if(st.unit==="reps"){g("mn").onclick=()=>{reps=Math.max(0,reps-1);g("rv").textContent=reps};g("pl").onclick=()=>{reps=Math.min(300,reps+1);g("rv").textContent=reps};g("ok").onclick=()=>log(reps)}
+      else{let t0=0;g("hs").onclick=()=>{if(hold){const v=Math.round((Date.now()-t0)/1000);clearInterval(hold);hold=null;log(v);return}
+          Sound.beep(660);t0=Date.now();g("hs").textContent="Arrêter";g("hs").className="btn warn wide";
+          hold=setInterval(()=>{const v=(Date.now()-t0)/1000;g("hv").textContent=fmt(v);if(v>=st.target){clearInterval(hold);hold=null;Sound.beep(990,.15);Sound.beep(1320,.2,.2);log(st.target)}},150)}}
+      g("sk").onclick=()=>{A.idx++;const n=steps[A.idx];if(n&&n.t==="rest")A.restEndsAt=Date.now()+n.sec*1000;Active.set(A);draw()};
+    }else{
+      const nw=steps.slice(A.idx).find(s=>s.t==="work");const ne=nw?exo(p,nw.code):null;
+      el.innerHTML=`<div class="wrap rest">${top()}
+        <div class="hero"><span class="lbl">${esc(st.why)}</span><h2>Repos</h2></div>
+        <div class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="none" stroke="var(--sunk)" stroke-width="6"/><circle id="arc" cx="50" cy="50" r="46" fill="none" stroke="var(--rest)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg>
+          <div class="c"><div class="huge" id="rl">${fmt(st.sec)}</div><span class="muted small">sur ${fmt(st.sec)}</span></div></div>
+        <div class="g3"><button class="btn ghost" id="pz">Pause</button><button class="btn ghost" id="ad">+15 s</button><button class="btn warn" id="sk">Passer</button></div>
+        ${nw?`<div class="card"><span class="lbl">Prochaine série</span><div class="row between"><strong>${esc(nw.code)} · ${esc(ne.n)}</strong><span class="num">${nw.set}/${nw.sets} · ${unitTxt(nw.unit,nw.target)}</span></div></div>`:""}
+        <p class="muted small" style="text-align:center">La série suivante s'affiche toute seule à la fin du repos, avec un signal sonore.</p></div>`;
+      el.querySelector("#pz").onclick=()=>timer.paused!=null?timer.resume():timer.pause();
+      el.querySelector("#ad").onclick=()=>{timer.add(15);A.restEndsAt=(A.restEndsAt||Date.now())+15000;Active.set(A)};
+      el.querySelector("#sk").onclick=()=>timer.skip();
+      const end=A.restEndsAt&&A.restEndsAt>Date.now()?A.restEndsAt:null;
+      timer.start(st.sec,end||Date.now()+st.sec*1000);
+    }
+    el.querySelector("#q").onclick=quitAsk;
+  }
+  function quitAsk(){timer.pause();const box=document.createElement("div");box.className="card";
+    box.innerHTML=`<strong>Arrêter la séance ?</strong><p class="muted small">${A.sets.length} série(s) faites.</p><div class="g2"><button class="btn" id="qs">${A.sets.length?"Enregistrer et arrêter":"Arrêter"}</button><button class="btn ghost" id="qb">Continuer</button></div>`;
+    el.querySelector(".wrap").prepend(box);box.querySelector("#qb").onclick=()=>{box.remove();timer.resume()};
+    box.querySelector("#qs").onclick=()=>{if(A.sets.length){saveSession("aborted")}close()}}
+  function saveSession(status){
+    const res=status==="done"?applyProgress(p,lv,A.sets):{up:[],swaps:[],level:false};
+    S.sessions.push({id:A.id,date:today(),prog:p,level:lv.num,startedAt:A.startedAt,endedAt:Date.now(),status,sets:A.sets.map(x=>({code:x.code,i:x.i,set:x.set,target:x.target,reps:x.reps,unit:x.unit,restPlanned:x.restPlanned,restTaken:x.restTaken}))});
+    save();return res;
+  }
+  function finish(){
+    timer.stop();const res=saveSession("done");Active.set(null);
+    const tot=A.sets.reduce((a,x)=>a+(x.unit==="reps"?x.reps:0),0),ok=A.sets.filter(x=>x.reps>=x.target).length;
+    el.innerHTML=`<div class="wrap"><span class="lbl">Séance terminée</span><h1>Niveau ${lv.num}</h1>
+      <div class="g3"><div class="stat"><span class="lbl">Séries</span><b>${ok}/${A.sets.length}</b></div><div class="stat"><span class="lbl">Répét.</span><b>${tot}</b></div><div class="stat"><span class="lbl">Durée</span><b>${fmt((Date.now()-A.startedAt)/1000)}</b></div></div>
+      ${res.up.length?`<div class="card"><h3>Objectifs relevés</h3>${res.up.map(u=>`<p><span class="code">${esc(u.code)}</span> → <strong class="num">${u.target}</strong> par série</p>`).join("")}</div>`:`<div class="card"><p>Aucun objectif relevé cette fois : retente les mêmes chiffres à la prochaine séance.</p></div>`}
+      ${res.swaps.map((s,k)=>`<div class="card" style="border:2px solid var(--go)"><h3>Variante débloquée</h3><p>Tu peux remplacer <span class="code">${esc(s.from)}</span> par <span class="code">${esc(s.to)}</span> ${esc(exo(p,s.to).n)} (départ ${s.start}).</p><div class="g2"><button class="btn" data-sw="${k}">Passer à ${esc(s.to)}</button><button class="btn ghost" data-swno="${k}">Plus tard</button></div></div>`).join("")}
+      ${res.level&&levelDef(p,lv.num+1)?`<div class="card" style="border:2px solid var(--rest)"><h3>Objectif repère atteint</h3><p>${esc(lv.up.code)} ${lv.up.reps} sur toutes les séries : tu peux passer au niveau ${lv.num+1}.</p><div class="g2"><button class="btn warn" id="lvup">Passer au niveau ${lv.num+1}</button><button class="btn ghost" id="lvno">Rester</button></div></div>`:""}
+      <button class="btn wide" id="done">Terminer</button></div>`;
+    el.querySelectorAll("[data-sw]").forEach(b=>b.onclick=()=>{const s=res.swaps[+b.dataset.sw];S.progress[pKey(p,lv.num,s.i)]={code:s.to,target:s.start};save();b.closest(".card").innerHTML=`<p>C'est fait : ${esc(s.to)} à partir de la prochaine séance.</p>`});
+    el.querySelectorAll("[data-swno]").forEach(b=>b.onclick=()=>b.closest(".card").remove());
+    const lu=el.querySelector("#lvup");if(lu){lu.onclick=()=>{S.settings.level=lv.num+1;save();lu.closest(".card").innerHTML=`<p>Bienvenue au niveau ${lv.num+1}.</p>`};el.querySelector("#lvno").onclick=()=>el.querySelector("#lvno").closest(".card").remove()}
+    el.querySelector("#done").onclick=close;
+  }
+  draw();
+}
+
+/* =====================================================================
+   7. VUES
+   ===================================================================== */
+let view="home";
+const V=document.getElementById("view");
+function toast(t){const d=document.createElement("div");d.className="toast";d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
+function render(){document.querySelectorAll("nav.tab button").forEach(b=>b.setAttribute("aria-current",b.dataset.v===view?"page":"false"));({home,prog:progView,hist,body,edit})[view]();window.scrollTo(0,0)}
+function lastWeight(){const b=S.bodyLog.filter(x=>x.weight);return b.length?b[b.length-1]:null}
+function home(){
+  const p=S.settings.program,lv=levelDef(p,S.settings.level),nums=levelNums(p),w=lastWeight();
+  const month=S.sessions.filter(s=>s.date.slice(0,7)===today().slice(0,7)).length;
+  const act=Active.get();
+  V.innerHTML=`<header class="row between" style="align-items:flex-end"><div><span class="lbl">Poids du corps · sans matériel</span><h1>Carnet</h1></div><span class="pill">${Store.kind==="appareil"?"Enregistré sur l'appareil":"Mémoire temporaire"}</span></header>
+   ${act?`<div class="card" style="border:2px solid var(--rest)"><h3>Séance en cours</h3><p class="muted small">Commencée à ${new Date(act.startedAt).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}, ${act.sets.length} série(s) faites.</p><div class="g2"><button class="btn warn" id="resume">Reprendre</button><button class="btn ghost" id="drop">Abandonner</button></div></div>`:""}
+   <div class="card">
+    <div class="g2"><div class="f"><label for="sp">Programme</label><select id="sp"><option value="carnet">Carnet</option><option value="custom">Mes niveaux</option></select></div>
+     <div class="f"><label for="sl">Niveau</label><select id="sl">${(nums.length?nums:[S.settings.level]).map(n=>`<option value="${n}" ${n===S.settings.level?"selected":""}>Niveau ${n}</option>`).join("")}</select></div></div>
+    <div class="g3"><div class="stat"><span class="lbl">Poids</span><b>${w?String(w.weight).replace(".",","):"–"}</b><span class="small muted">${w?"kg":"à saisir"}</span></div>
+     <div class="stat"><span class="lbl">Ce mois</span><b>${month}</b><span class="small muted">séances</span></div>
+     <div class="stat"><span class="lbl">Total</span><b>${S.sessions.length}</b><span class="small muted">séances</span></div></div>
+   </div>
+   ${lv?`<div class="card"><div class="row between"><div><span class="lbl">Séance du jour</span><h2>Niveau ${lv.num}${lv.name?" · "+esc(lv.name):""}</h2></div><span class="pill go">≈ ${Math.round(buildSteps(p,lv).reduce((a,s)=>a+(s.t==="rest"?s.sec:35),0)/60)} min</span></div>
+     <ul class="items">${lv.items.map((item,i)=>{const pr=prog(p,lv.num,i,item),e=exo(p,pr.code);return `<li class="item" data-fig="${p==="carnet"?e.fig:"none"}">${p==="carnet"?svgEl():`<span class="code">${esc(pr.code)}</span>`}<div style="min-width:0">${p==="carnet"?`<span class="code">${esc(pr.code)}</span> `:""}<strong>${esc(e.n)}</strong><div class="small muted">repos ${item.restSet} s${item.restAfter?` · puis ${fmt(item.restAfter)}`:""}</div></div><div class="tgt">${item.sets}×${unitTxt(e.u,pr.target)}</div></li>`}).join("")}</ul>
+     ${lv.up?`<p class="small muted">Objectif pour passer au niveau suivant : <strong>${esc(lv.up.code)}</strong> à ${lv.up.reps} sur toutes les séries.</p>`:""}
+     <button class="btn wide" id="go" style="min-height:64px;font-size:1.2rem">Démarrer la séance</button></div>`
+   :`<div class="card"><h2>Aucun niveau ici</h2><p class="muted">${p==="custom"?"Ajoute tes niveaux dans l'onglet « Mes niveaux » : codes, séries, objectifs et repos de ton livre.":"Choisis un niveau."}</p>${p==="custom"?`<button class="btn" id="toEdit">Ajouter un niveau</button>`:""}</div>`}
+   <p class="small muted">Genou : le programme Carnet garde des exercices de jambes doux jusqu'au niveau 3 (isométrie, chaise au mur). Si une série fait monter la douleur du tendon au-delà de 3/10, passe-la.</p>`;
+  const sp=V.querySelector("#sp");sp.value=p;sp.onchange=()=>{S.settings.program=sp.value;const n=levelNums(sp.value);if(n.length&&!n.includes(S.settings.level))S.settings.level=n[0];save();render()};
+  V.querySelector("#sl").onchange=e=>{S.settings.level=+e.target.value;save();render()};
+  V.querySelectorAll(".item").forEach(li=>{const s=li.querySelector("svg");if(s){const f=li.dataset.fig;animate(s,isNaN(f)?f:+f,3600)}});
+  const go=V.querySelector("#go");if(go)go.onclick=()=>startSession();
+  const te=V.querySelector("#toEdit");if(te)te.onclick=()=>{view="edit";render()};
+  if(act){V.querySelector("#resume").onclick=()=>{S.settings.program=act.prog;S.settings.level=act.level;startSession(act)};V.querySelector("#drop").onclick=()=>{Active.set(null);render()}}
+}
+function progView(){
+  const p=S.settings.program;const nums=levelNums(p);
+  V.innerHTML=`<header><span class="lbl">${esc(progName(p))}</span><h1>Programme</h1></header>
+   ${p==="carnet"?`<p class="muted">12 niveaux. Chaque séance réussie (toutes les séries à l'objectif) ajoute une répétition, ou 5 s pour les maintiens. Au seuil indiqué, une variante plus difficile te sera proposée.</p>`:""}
+   ${nums.length?"":`<div class="card"><p class="muted">Aucun niveau saisi.</p></div>`}
+   ${nums.map(n=>{const lv=levelDef(p,n);return `<details class="card" ${n===S.settings.level?"open":""}><summary><strong>Niveau ${n}${lv.name?" · "+esc(lv.name):""}</strong>${n===S.settings.level?` <span class="pill go">actuel</span>`:""}</summary>
+     <ul class="items">${lv.items.map((item,i)=>{const pr=prog(p,n,i,item),e=exo(p,item.code);return `<li class="item" style="grid-template-columns:1fr auto"><div style="min-width:0"><span class="code">${esc(item.code)}</span> <strong>${esc(e.n)}</strong>
+       <div class="small muted">${item.sets} séries · départ ${unitTxt(e.u,item.start)} · repos ${item.restSet} s / ${fmt(item.restAfter)}${item.swap?` · variante ${esc(item.swap.to)} à ${item.swap.at}`:""}</div>
+       ${p==="carnet"&&e.q?`<a class="small" href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.q)}" target="_blank" rel="noopener">Vidéos</a>`:""}</div><div class="tgt">${pr.code!==item.code?esc(pr.code)+" ":""}${unitTxt(exo(p,pr.code).u,pr.target)}</div></li>`}).join("")}</ul>
+     ${lv.up?`<p class="small muted">Passage au niveau suivant : ${esc(lv.up.code)} à ${lv.up.reps} sur toutes les séries.</p>`:""}
+     <button class="btn ghost sm" data-set="${n}">Choisir ce niveau</button></details>`}).join("")}`;
+  V.querySelectorAll("[data-set]").forEach(b=>b.onclick=()=>{S.settings.level=+b.dataset.set;save();view="home";render()});
+}
+function lineChart(pts,{unit="",color="var(--go)"}={}){
+  if(pts.length<2)return `<p class="muted small">Il faut au moins deux séances pour tracer une courbe.</p>`;
+  const W=320,H=170,L=34,R=10,T=14,B=26;const ys=pts.map(p=>p.y);let lo=Math.min(...ys),hi=Math.max(...ys);if(lo===hi){lo-=1;hi+=1}
+  const pad=(hi-lo)*.1;lo=Math.max(0,lo-pad);hi=hi+pad;
+  const x=i=>L+(W-L-R)*i/(pts.length-1),y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  const ticks=[lo,(lo+hi)/2,hi];
+  const path=pts.map((p,i)=>`${i?"L":"M"}${x(i).toFixed(1)} ${y(p.y).toFixed(1)}`).join("");
+  const area=path+`L${x(pts.length-1).toFixed(1)} ${H-B}L${x(0).toFixed(1)} ${H-B}Z`;
+  const lab=[0,Math.floor((pts.length-1)/2),pts.length-1].filter((v,i,a)=>a.indexOf(v)===i);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Courbe">
+   ${ticks.map(t=>`<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${y(t)+4}" font-size="10" text-anchor="end" fill="var(--muted)">${Math.round(t*10)/10}</text>`).join("")}
+   <path d="${area}" fill="${color}" opacity=".12"/><path d="${path}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>
+   <circle cx="${x(pts.length-1)}" cy="${y(pts[pts.length-1].y)}" r="4.5" fill="${color}"/>
+   ${lab.map(i=>`<text x="${x(i)}" y="${H-8}" font-size="10" text-anchor="middle" fill="var(--muted)">${pts[i].l}</text>`).join("")}</svg>`;
+}
+function hist(){
+  const ss=S.sessions.slice().sort((a,b)=>a.startedAt-b.startedAt);
+  const codes=[...new Set(ss.flatMap(s=>s.sets.map(x=>x.code)))];
+  let sel=hist.sel&&codes.includes(hist.sel)?hist.sel:codes[0];
+  const vol=ss.slice(-20).map(s=>({y:s.sets.filter(x=>x.unit!=="sec").reduce((a,x)=>a+x.reps,0),l:s.date.slice(8)+"/"+s.date.slice(5,7)}));
+  const per=ss.filter(s=>s.sets.some(x=>x.code===sel)).slice(-20).map(s=>{const m=s.sets.filter(x=>x.code===sel);return {y:m.reduce((a,x)=>a+x.reps,0)/m.length,l:s.date.slice(8)+"/"+s.date.slice(5,7),ok:m.every(x=>x.reps>=x.target)}});
+  V.innerHTML=`<header><span class="lbl">Historique</span><h1>Progrès</h1></header>
+   ${ss.length?`<div class="card"><h3>Répétitions par séance</h3>${lineChart(vol)}</div>
+    <div class="card"><div class="row between"><h3>Par exercice</h3><select id="hc" style="width:auto">${codes.map(c=>`<option ${c===sel?"selected":""}>${esc(c)}</option>`).join("")}</select></div>
+     <p class="small muted">Moyenne par série. Point vert = toutes les séries à l'objectif.</p>${lineChart(per)}
+     <div class="row">${per.map(p=>`<span class="pill ${p.ok?"go":""}">${p.l} · ${Math.round(p.y*10)/10}</span>`).join("")}</div></div>
+    <div class="card"><h3>Séances</h3><ul class="hist">${ss.slice().reverse().slice(0,30).map(s=>{const ok=s.sets.filter(x=>x.reps>=x.target).length;return `<li><span>${new Date(s.date+"T12:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})} · niv. ${s.level}${s.status==="aborted"?" · interrompue":""}</span><span class="num">${ok}/${s.sets.length} ✓ · ${fmt((s.endedAt-s.startedAt)/1000)}</span></li>`}).join("")}</ul></div>`
+   :`<div class="card"><p class="muted">Aucune séance enregistrée. Les courbes apparaîtront après tes premières séances.</p></div>`}`;
+  const hc=V.querySelector("#hc");if(hc)hc.onchange=()=>{hist.sel=hc.value;hist()};
+}
+function body(){
+  const b=S.bodyLog.slice().sort((a,c)=>a.date.localeCompare(c.date));const last=b[b.length-1]||{};
+  V.innerHTML=`<header><span class="lbl">Poids et mensurations</span><h1>Corps</h1></header>
+   <form class="card" id="bf"><div class="g2">
+    <div class="f"><label for="bw">Poids (kg)</label><input id="bw" type="number" step="0.1" inputmode="decimal" min="30" max="250" value="${last.weight||""}"></div>
+    <div class="f"><label for="bd">Date</label><input id="bd" type="date" value="${today()}"></div>
+    <div class="f"><label for="bc">Poitrine (cm)</label><input id="bc" type="number" step="0.5" inputmode="decimal" value="${last.chest||""}"></div>
+    <div class="f"><label for="ba">Bras (cm)</label><input id="ba" type="number" step="0.5" inputmode="decimal" value="${last.arm||""}"></div>
+    <div class="f"><label for="bt">Taille (cm)</label><input id="bt" type="number" step="0.5" inputmode="decimal" value="${last.waist||""}"></div>
+    <div class="f"><label for="bu">Cuisse (cm)</label><input id="bu" type="number" step="0.5" inputmode="decimal" value="${last.thigh||""}"></div></div>
+    <button class="btn wide" type="submit">Enregistrer la mesure</button></form>
+   <div class="card"><h3>Poids</h3>${lineChart(b.filter(x=>x.weight).slice(-30).map(x=>({y:x.weight,l:x.date.slice(8)+"/"+x.date.slice(5,7)})),{color:"var(--rest)"})}</div>
+   ${b.length?`<div class="card"><h3>Mesures</h3><ul class="hist">${b.slice().reverse().slice(0,20).map(x=>`<li><span>${new Date(x.date+"T12:00").toLocaleDateString("fr-FR")}</span><span class="num">${x.weight?x.weight+" kg":""}${x.arm?" · bras "+x.arm:""}${x.waist?" · taille "+x.waist:""}</span></li>`).join("")}</ul></div>`:""}`;
+  V.querySelector("#bf").onsubmit=e=>{e.preventDefault();const n=id=>{const v=parseFloat(V.querySelector(id).value);return isNaN(v)?null:v};
+    const w=n("#bw");if(w!=null&&(w<30||w>250))return toast("Poids entre 30 et 250 kg.");
+    const d=V.querySelector("#bd").value||today();S.bodyLog=S.bodyLog.filter(x=>x.date!==d);S.bodyLog.push({date:d,weight:w,chest:n("#bc"),arm:n("#ba"),waist:n("#bt"),thigh:n("#bu")});save();toast("Mesure enregistrée");body()};
+}
+function blankItem(){return {code:"",n:"",u:"reps",sets:6,start:5,step:1,restSet:25,restAfter:180,rhythm:"normal",swapAt:"",swapTo:"",swapN:"",swapStart:""}}
+function edit(){
+  const nums=Object.keys(S.custom.levels).map(Number).sort((a,b)=>a-b);
+  const cur=edit.lv&&S.custom.levels[edit.lv]?edit.lv:null;
+  if(cur){return editLevel(cur)}
+  V.innerHTML=`<header><span class="lbl">Ton programme personnel</span><h1>Mes niveaux</h1></header>
+   <p class="muted">Saisis ici les niveaux de ton livre : codes, nombre de séries, objectif de départ, repos entre séries et avant l'exercice suivant. Ils restent sur ton appareil.</p>
+   <div class="card">${nums.length?`<ul class="hist">${nums.map(n=>`<li><span>Niveau ${n}${S.custom.levels[n].name?" · "+esc(S.custom.levels[n].name):""} · ${S.custom.levels[n].items.length} exercices</span><button class="btn ghost sm" data-e="${n}">Modifier</button></li>`).join("")}</ul>`:`<p class="muted">Aucun niveau pour l'instant.</p>`}
+    <div class="g2"><div class="f"><label for="nn">Numéro</label><input id="nn" type="number" min="1" max="99" inputmode="numeric" value="${(nums[nums.length-1]||0)+1}"></div><div style="display:flex;align-items:flex-end"><button class="btn wide" id="add">Créer le niveau</button></div></div></div>
+   <div class="card"><h3>Sauvegarde</h3><p class="muted small">Exporte tout (séances, mesures, niveaux) régulièrement : sur iPhone, Safari peut effacer les données d'un site non installé.</p>
+    <div class="g2"><button class="btn ghost" id="ex">Exporter</button><button class="btn ghost" id="im">Importer</button></div>
+    <textarea id="io" placeholder="Le code de sauvegarde apparaît ici. Pour importer, colle-le puis appuie sur Importer." hidden></textarea>
+    <input type="file" id="fi" accept="application/json,.json" hidden></div>
+   <div class="card"><h3>Réglages</h3><label class="row" style="color:var(--ink)"><input type="checkbox" id="snd" style="width:auto" ${S.settings.sound?"checked":""}> Signaux sonores</label></div>`;
+  V.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{edit.lv=+b.dataset.e;render()});
+  V.querySelector("#add").onclick=()=>{const n=+V.querySelector("#nn").value;if(!(n>=1))return toast("Numéro invalide.");if(S.custom.levels[n])return toast("Le niveau "+n+" existe déjà.");S.custom.levels[n]={name:"",items:[],up:null};save();edit.lv=n;render()};
+  V.querySelector("#snd").onchange=e=>{S.settings.sound=e.target.checked;save()};
+  const io=V.querySelector("#io");
+  V.querySelector("#ex").onclick=async()=>{const data=JSON.stringify(S);
+    try{const blob=new Blob([data],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="carnet-"+today()+".json";document.body.appendChild(a);a.click();a.remove()}catch(e){}
+    io.hidden=false;io.value=data;try{await navigator.clipboard.writeText(data);toast("Sauvegarde copiée et téléchargée")}catch(e){io.select();toast("Sauvegarde affichée : copie-la")}};
+  V.querySelector("#im").onclick=()=>{if(io.hidden||!io.value.trim()){io.hidden=false;V.querySelector("#fi").click();return}importData(io.value)};
+  V.querySelector("#fi").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>importData(String(r.result));r.readAsText(f)};
+}
+function importData(txt){try{const d=JSON.parse(txt);if(!d||d.version!==VERSION||!Array.isArray(d.sessions))throw 0;S=Object.assign(fresh(),d);save();toast("Données importées");render()}catch(e){toast("Ce fichier n'est pas une sauvegarde du Carnet.")}}
+function editLevel(n){
+  const L=S.custom.levels[n];
+  const rows=L.items.map((it,i)=>{const e=S.custom.exercises[it.code]||{};const sw=it.swap||{};return `<div class="ed" data-i="${i}">
+    <div class="f"><label>Code</label><input data-k="code" value="${esc(it.code)}" autocapitalize="characters"></div>
+    <div class="f w2"><label>Nom</label><input data-k="n" value="${esc(e.n||"")}"></div>
+    <div class="f"><label>Unité</label><select data-k="u"><option value="reps">rép.</option><option value="sec" ${e.u==="sec"?"selected":""}>sec</option></select></div>
+    <div class="f"><label>Séries</label><input data-k="sets" type="number" inputmode="numeric" value="${it.sets}"></div>
+    <div class="f"><label>Départ</label><input data-k="start" type="number" inputmode="numeric" value="${it.start}"></div>
+    <div class="f"><label>Pas</label><input data-k="step" type="number" inputmode="numeric" value="${it.step}"></div>
+    <div class="f"><label>Rythme</label><select data-k="rhythm">${["normal","rapide","lent"].map(r=>`<option ${it.rhythm===r?"selected":""}>${r}</option>`).join("")}</select></div>
+    <div class="f"><label>Repos série</label><input data-k="restSet" type="number" inputmode="numeric" value="${it.restSet}"></div>
+    <div class="f"><label>Repos après</label><input data-k="restAfter" type="number" inputmode="numeric" value="${it.restAfter}"></div>
+    <div class="f"><label>Variante à</label><input data-k="swapAt" type="number" inputmode="numeric" value="${sw.at||""}"></div>
+    <div class="f"><label>Code var.</label><input data-k="swapTo" value="${esc(sw.to||"")}" autocapitalize="characters"></div>
+    <div class="f w2"><label>Nom variante</label><input data-k="swapN" value="${esc((S.custom.exercises[sw.to]||{}).n||"")}"></div>
+    <div class="f"><label>Départ var.</label><input data-k="swapStart" type="number" inputmode="numeric" value="${sw.start||""}"></div>
+    <div class="row w4" style="justify-content:flex-end"><button class="btn ghost sm" data-up="${i}" ${i?"":"disabled"}>Monter</button><button class="btn ghost sm" data-del="${i}">Supprimer</button></div></div>`}).join("");
+  V.innerHTML=`<header class="row between"><div><span class="lbl">Mes niveaux</span><h1>Niveau ${n}</h1></div><button class="btn ghost sm" id="back">Retour</button></header>
+   <div class="card"><div class="f"><label for="ln">Nom du niveau (facultatif)</label><input id="ln" value="${esc(L.name||"")}"></div>
+    <p class="small muted">Repos en secondes. « Pas » : ce qu'on ajoute à l'objectif après une séance réussie. Les champs « variante » sont facultatifs.</p></div>
+   ${rows||`<p class="muted">Aucun exercice. Ajoute le premier ci-dessous.</p>`}
+   <button class="btn ghost wide" id="addi">Ajouter un exercice</button>
+   <div class="card"><h3>Passage au niveau suivant</h3><div class="g2"><div class="f"><label for="uc">Exercice repère (code)</label><input id="uc" value="${esc(L.up?L.up.code:"")}" autocapitalize="characters"></div><div class="f"><label for="ur">Objectif par série</label><input id="ur" type="number" inputmode="numeric" value="${L.up?L.up.reps:""}"></div></div></div>
+   <div class="g2"><button class="btn" id="sv">Enregistrer</button><button class="btn ghost" id="dl">Supprimer le niveau</button></div>`;
+  const collect=()=>{L.name=V.querySelector("#ln").value.trim();
+    L.items=[...V.querySelectorAll(".ed")].map(r=>{const v=k=>r.querySelector(`[data-k="${k}"]`).value.trim();const num=(k,d)=>{const x=parseInt(v(k),10);return isNaN(x)?d:x};
+      const code=v("code").toUpperCase()||"?";S.custom.exercises[code]={n:v("n")||code,u:v("u")};
+      const to=v("swapTo").toUpperCase();if(to)S.custom.exercises[to]={n:v("swapN")||to,u:v("u")};
+      return {code,sets:num("sets",6),start:num("start",5),step:num("step",1),restSet:num("restSet",25),restAfter:num("restAfter",180),rhythm:v("rhythm"),swap:to&&num("swapAt",0)?{at:num("swapAt",0),to,start:num("swapStart",num("start",5))}:null}});
+    const uc=V.querySelector("#uc").value.trim().toUpperCase(),ur=parseInt(V.querySelector("#ur").value,10);L.up=uc&&ur?{code:uc,reps:ur}:null};
+  V.querySelector("#back").onclick=()=>{collect();save();edit.lv=null;render()};
+  V.querySelector("#addi").onclick=()=>{collect();L.items.push({code:"",sets:6,start:5,step:1,restSet:25,restAfter:180,rhythm:"normal",swap:null});save();editLevel(n)};
+  V.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{collect();L.items.splice(+b.dataset.del,1);save();editLevel(n)});
+  V.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>{collect();const i=+b.dataset.up;[L.items[i-1],L.items[i]]=[L.items[i],L.items[i-1]];save();editLevel(n)});
+  V.querySelector("#sv").onclick=()=>{collect();Object.keys(S.progress).filter(k=>k.startsWith("custom:"+n+":")).forEach(k=>delete S.progress[k]);save();toast("Niveau "+n+" enregistré");edit.lv=null;render()};
+  const dl=V.querySelector("#dl");dl.onclick=()=>{if(dl.dataset.c){delete S.custom.levels[n];save();edit.lv=null;render()}else{dl.dataset.c="1";dl.textContent="Confirmer la suppression";dl.className="btn warn"}};
+}
+document.querySelectorAll("nav.tab button").forEach(b=>b.onclick=()=>{view=b.dataset.v;if(view!=="edit")edit.lv=null;render()});
+
+/* ---------- démarrage ---------- */
+(async()=>{await Store.open();const d=await Store.load();if(d&&d.version===VERSION)S=Object.assign(fresh(),d);render();
+  if("serviceWorker" in navigator&&location.protocol==="https:"&&!location.hostname.endsWith("claude.ai")&&!location.hostname.includes("claudeusercontent")){navigator.serviceWorker.register("sw.js").catch(()=>{})}})();
+})();
+</script>
+
+</body>
+</html>
